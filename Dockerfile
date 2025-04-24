@@ -11,7 +11,7 @@ COPY . /app
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
 # Expose the port (optional)
-EXPOSE 8080
+EXPOSE 5000
 
 # Run the bot
 CMD ["python", "main.py"]
