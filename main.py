@@ -18,7 +18,7 @@ def run_flask():
 
 # Initialize your Pyrogram bot
 def run_bot():
-    bot = Client("my_bot", api_id="your_api_id", api_hash="your_api_hash", bot_token="your_bot_token")
+    bot = Client("my_bot", api_id="23448804", api_hash="07a3c7834916cb7a4318026dbf0eac28", bot_token="7818209258:AAHYKSNMaHMj035mxi0IotbEA5LRSxystDo")
     bot.run()  # Start the bot
 
 if __name__ == "__main__":
