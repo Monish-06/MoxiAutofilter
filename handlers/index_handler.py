@@ -1,6 +1,13 @@
 from pyrogram import Client, filters
 from pymongo import MongoClient
 import os
+from dotenv import load_dotenv
+import os
+
+load_dotenv()  # This loads the .env file
+
+# Check if DB_NAME is correctly loaded
+print(os.getenv("DB_NAME"))  # Should print the database name
 
 # MongoDB setup
 mongo = MongoClient(os.getenv("MONGO_URI"))
