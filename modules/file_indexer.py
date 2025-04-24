@@ -1,44 +1,34 @@
-import logging
-from pyrogram import Client, filters
-from .database import store_file_metadata, get_file_metadata
+import os
+from motor.motor_asyncio import AsyncIOMotorClient
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+MONGO_URI = os.getenv("DATABASE_URI")
+DB_NAME = os.getenv("DATABASE_NAME")
+COLLECTION_NAME = os.getenv("COLLECTION_NAME")
 
-# This function will handle storing the metadata of each file
-async def handle_new_file(client: Client, message):
-    """ Store file metadata when a new file is posted or forwarded. """
-    try:
-        if message.document:
-            file_id = message.document.file_id
-            file_name = message.document.file_name
-            file_size = message.document.file_size
-            file_type = message.document.mime_type
-            mime_type = message.document.mime_type
-            caption = message.caption
-            file_ref = message.forward_from.id if message.forward_from else None
+client = AsyncIOMotorClient(MONGO_URI)
+db = client[DB_NAME]
+collection = db[COLLECTION_NAME]
 
-            # Check if file already exists in the database
-            existing_file = await get_file_metadata(file_id)
-            if not existing_file:
-                # Store the file metadata in the database
-                await store_file_metadata(file_id, file_name, file_size, file_type, mime_type, caption, file_ref)
-                logger.info(f"Stored file metadata for: {file_name}")
-            else:
-                logger.info(f"File {file_name} already exists in the database.")
-    except Exception as e:
-        logger.error(f"Error while handling new file: {e}")
+async def save_file(message):
+    if not message.document:
+        return
 
-# Function to start the file indexing from the last message
-async def start_indexing(client: Client, message):
-    """ Start indexing files from the last forwarded message """
-    try:
-        if message.document:
-            # Get the last message's document and start indexing
-            logger.info("Starting to index files.")
-            await handle_new_file(client, message)
+    file_info = {
+        "_id": str(message.document.file_id),
+        "file_name": message.document.file_name,
+        "file_size": message.document.file_size,
+        "mime_type": message.document.mime_type,
+        "caption": message.caption,
+        "chat_id": message.chat.id,
+        "message_id": message.id
+    }
+    await collection.update_one(
+        {"_id": file_info["_id"]},
+        {"$set": file_info},
+        upsert=True
+    )
 
-        # Set the bot to listen to future messages
-        await client.add_handler(filters.document, handle_new_file)
-    except Exception as e:
-        logger.error(f"Error starting file indexing: {e}")
+async def index_existing_files(client, channel_id):
+    async for msg in client.get_chat_history(channel_id, limit=None):
+        if msg.document:
+            await save_file(msg)
