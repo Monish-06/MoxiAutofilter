@@ -41,7 +41,8 @@ def register_handlers(app):
 
         total = saved = skipped = errors = 0
 
-        async for m in bot.iter_history(forwarded_chat_id, offset_id=msg.forward_from_message_id - 1, reverse=True):
+        # Replace `iter_history` with `get_chat_history`
+        async for m in bot.get_chat_history(forwarded_chat_id, limit=100, offset_id=msg.forward_from_message_id - 1, reverse=True):
             total += 1
             try:
                 if m.media:
