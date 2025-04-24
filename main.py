@@ -8,9 +8,9 @@ import os
 load_dotenv()  # This loads the .env file
 
 
-app = Client("MoxiBot", api_id=int(os.environ["API_ID"]),
-             api_hash=os.environ["API_HASH"],
-             bot_token=os.environ["BOT_TOKEN"])
+app = Client("MoxiBot", api_id=int(os.getenv["API_ID"]),
+             api_hash=os.getenv["API_HASH"],
+             bot_token=os.getenv["BOT_TOKEN"])
 
 
 if __name__ == "__main__":
