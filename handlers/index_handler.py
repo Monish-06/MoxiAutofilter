@@ -1,58 +1,92 @@
+from pyrogram import Client, filters
 from pymongo import MongoClient
 import os
 
-# Connect using your existing DB and collection from .env
-client = MongoClient(os.environ["MONGO_URI"])
-db = client[os.environ["DB_NAME"]]
-files_collection = db[os.environ["COLLECTION_NAME"]]
+# MongoDB setup
+mongo = MongoClient(os.getenv("MONGO_URI"))
+db = mongo[os.getenv("DB_NAME")]
+collection = db[os.getenv("COLLECTION_NAME")]
 
-index_router = Client("indexer")
+ALLOWED_CHANNELS = list(map(int, os.getenv("CHANNELS").split()))
+user_indexing_state = {}
 
-@filters.command("start") & filters.private
-async def start_handler(client, message):
-    await message.reply("Hey! I'm alive and ready to index your channels.")
+@Client.on_message(filters.command("start"))
+async def start_cmd(_, msg):
+    await msg.reply("Hey! Bot is alive and ready.")
 
-@filters.command("index") & filters.private
-async def index_command(client, message):
-    await message.reply("Please forward the last message of the channel you want to index.")
+@Client.on_message(filters.command("index"))
+async def index_cmd(_, msg):
+    user_indexing_state[msg.from_user.id] = {"status": "waiting_for_forward"}
+    await msg.reply("Now please forward the last message from the channel you want to index.")
 
-@filters.forwarded & filters.private
-async def handle_forwarded(client, message: Message):
-    fwd = message.forward_from_chat
-    if not fwd:
-        return await message.reply("That's not a forwarded message.")
+@Client.on_message(filters.forwarded & filters.private)
+async def handle_forwarded_message(bot, msg):
+    user_id = msg.from_user.id
+    state = user_indexing_state.get(user_id, {})
 
-    if str(fwd.id) not in os.environ["CHANNELS"]:
-        return await message.reply("This channel is not allowed for indexing.")
+    if state.get("status") != "waiting_for_forward":
+        return
 
-    await message.reply("Starting to index... Please wait.")
+    forwarded_chat_id = msg.forward_from_chat.id
 
-    saved, skipped, errors = 0, 0, 0
-    async for msg in client.get_chat_history(fwd.id, reverse=True):
-        if msg.media:
-            file_id = getattr(msg, msg.media.value).file_id
-            data = {
-                "file_id": file_id,
-                "caption": msg.caption,
-                "channel_id": fwd.id,
-                "message_id": msg.message_id,
-                "media_type": msg.media.value
-            }
-            try:
-                if not files_collection.find_one({"file_id": file_id}):
-                    files_collection.insert_one(data)
-                    saved += 1
+    if forwarded_chat_id not in ALLOWED_CHANNELS:
+        await msg.reply("This channel is not allowed.")
+        user_indexing_state.pop(user_id, None)
+        return
+
+    await msg.reply("Starting indexing...")
+
+    total = saved = skipped = errors = 0
+
+    async for m in bot.iter_history(forwarded_chat_id, offset_id=msg.forward_from_message_id - 1, reverse=True):
+        total += 1
+
+        try:
+            if m.media:
+                file_id = None
+                file_name = None
+
+                if m.document:
+                    file_id = m.document.file_id
+                    file_name = m.document.file_name
+                elif m.video:
+                    file_id = m.video.file_id
+                    file_name = m.video.file_name or "video.mp4"
+                elif m.audio:
+                    file_id = m.audio.file_id
+                    file_name = m.audio.file_name or "audio.mp3"
+                elif m.photo:
+                    file_id = m.photo.file_id
+                    file_name = "photo.jpg"
                 else:
                     skipped += 1
-            except:
-                errors += 1
-        else:
-            skipped += 1
+                    continue
 
-    await message.reply_text(f"""**Indexing Complete**
+                if collection.find_one({"file_id": file_id}):
+                    skipped += 1
+                    continue
 
-Total Messages Fetched: {saved + skipped + errors}
-Total Files Saved: {saved}
-Duplicates Skipped: {skipped}
-Errors: {errors}
-""")
+                collection.insert_one({
+                    "file_id": file_id,
+                    "file_name": file_name,
+                    "caption": m.caption or "",
+                    "chat_id": forwarded_chat_id,
+                    "message_id": m.message_id
+                })
+                saved += 1
+            else:
+                skipped += 1
+
+        except Exception as e:
+            print("Error:", e)
+            errors += 1
+
+    user_indexing_state.pop(user_id, None)
+
+    await msg.reply(
+        f"**Indexing Complete**\n\n"
+        f"Total messages fetched: {total}\n"
+        f"Total messages saved: {saved}\n"
+        f"Duplicate/Unsupported Skipped: {skipped}\n"
+        f"Errors: {errors}"
+    )
