@@ -46,14 +46,14 @@ def extract_filters(filename):
 @Client.on_message(filters.text)
 async def search_handler(client, message: Message):
     query = message.text
-    print(f"Received query: {query}")  # Log the incoming message
+    await message.reply(f"Received query: {query}")  # Log the incoming message
 
     results = await find_files(query)
     if not results:
-        print("No results found.")
+        await message.reply("No results found.")  # Log when no results found
         return
 
-    print(f"Found results: {results}")  # Log the results
+    await message.reply(f"Found {len(results)} result(s).")  # Log the number of results found
 
     buttons = []
     for file in results:
@@ -88,9 +88,7 @@ async def search_handler(client, message: Message):
             )
         )
     except Exception as e:
-        print(e)
-
-
+        await message.reply(f"Error while editing the message: {e}")  # Log the error
 
 # Handle start command from link
 @Client.on_message(filters.private & filters.command("start"))
@@ -121,4 +119,4 @@ async def start_handler(client, message: Message):
                 )
             )
         except Exception as e:
-            await message.reply("**Failed to send file. Try again!**")
+            await message.reply(f"Error while sending file: {e}")  # Log the error
