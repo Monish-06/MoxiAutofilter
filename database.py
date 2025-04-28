@@ -2,10 +2,10 @@
 from pymongo import MongoClient
 
 # MongoDB connection URI (replace with your own)
-MONGO_URI = "mongodb://your_mongo_connection_string"
+MONGO_URI = "mongodb+srv://monish280720:hsUe1KPZd5wh5hfD@cluster0.x2rr3kl.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 client = MongoClient(MONGO_URI)
-db = client.get_database("your_database_name")  # Replace with your actual database name
-files_collection = db.files  # Assuming you have a collection named 'files'
+db = client.get_database("moxi_movies")  # Replace with your actual database name
+files_collection = db.Telegram_files  # Assuming you have a collection named 'files'
 
 # Function to search files in MongoDB
 def find_files(query):
