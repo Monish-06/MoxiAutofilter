@@ -42,7 +42,7 @@ def extract_filters(filename):
     return filters
 
 # Main search handler
-@Client.on_message(GROUP_ONLY & filters.text)
+@Client.on_message(filters.text)
 async def search_handler(client, message: Message):
     query = message.text
     print(f"Received query: {query}")  # Log the incoming message
