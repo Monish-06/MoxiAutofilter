@@ -1,5 +1,5 @@
 from pyrogram import Client, filters
-from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery, Message
+from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
 from dotenv import load_dotenv
 import os
 from database import find_files  # You already have this function to search files in MongoDB
@@ -46,14 +46,14 @@ def extract_filters(filename):
 @Client.on_message(filters.text)
 async def search_handler(client, message: Message):
     query = message.text
-    await message.reply(f"Received query: {query}")  # Log the incoming message
+    await message.reply(f"🔍 **Received query:** {query}")  # Log the incoming message as a reply
 
     results = await find_files(query)
     if not results:
-        await message.reply("No results found.")  # Log when no results found
+        await message.reply("❌ **No results found.**")  # Log when no results found
         return
 
-    await message.reply(f"Found {len(results)} result(s).")  # Log the number of results found
+    await message.reply(f"✅ **Found {len(results)} result(s).**")  # Log the number of results found
 
     buttons = []
     for file in results:
@@ -88,13 +88,13 @@ async def search_handler(client, message: Message):
             )
         )
     except Exception as e:
-        await message.reply(f"Error while editing the message: {e}")  # Log the error
+        await message.reply(f"⚠️ **Error while editing the message: {e}**")  # Log the error as a reply
 
 # Handle start command from link
 @Client.on_message(filters.private & filters.command("start"))
 async def start_handler(client, message: Message):
     if len(message.command) < 2:
-        await message.reply("Hello! Please search files in group.")
+        await message.reply("Hello! Please search files in the group.")  # Log the error if no command provided
         return
 
     payload = message.command[1]
@@ -113,10 +113,10 @@ async def start_handler(client, message: Message):
             await asyncio.sleep(1200)
             await sent.delete()
             await message.reply(
-                "**File deleted!\nRequest again in group!**",
+                "**File deleted!\nRequest again in the group!**",
                 reply_markup=InlineKeyboardMarkup(
                     [[InlineKeyboardButton("Join Group", url=GROUP_LINK)]]
                 )
             )
         except Exception as e:
-            await message.reply(f"Error while sending file: {e}")  # Log the error
+            await message.reply(f"⚠️ **Error while sending file: {e}**")  # Log error as a reply to the user
