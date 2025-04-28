@@ -1,10 +1,14 @@
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery, Message
-from config import CHANNEL, GROUP
+from dotenv import load_dotenv
+import os
 from database import find_files  # You already have this function to search files in MongoDB
 from helpers import get_shortlink  # Your safelink function
 import asyncio
 import re
+
+GROUP = os.getenv('GROUP')
+CHANNEL = os.getenv('CHANNEL')
 
 # Your group username without @
 GROUP_LINK = f"https://t.me/{GROUP}"
