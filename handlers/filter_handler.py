@@ -42,7 +42,7 @@ def extract_filters(filename):
     return filters
 
 # Main search handler
-@Client.on_message(GROUP_ONLY & filters.text & ~filters.edited)
+@Client.on_message(GROUP_ONLY & filters.text)  # Removed filters.edited
 async def search_handler(client, message: Message):
     query = message.text
 
