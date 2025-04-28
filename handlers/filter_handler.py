@@ -3,7 +3,7 @@ from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQ
 from dotenv import load_dotenv
 import os
 from database import find_files  # You already have this function to search files in MongoDB
-from helpers import get_shortlink  # Your safelink function
+from helpers.shortlink import get_shortlink  # Your safelink function
 import asyncio
 import re
 
