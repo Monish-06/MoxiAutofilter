@@ -42,40 +42,35 @@ def extract_filters(filename):
     return filters
 
 # Main search handler
-@Client.on_message(GROUP_ONLY & filters.text)  # Removed filters.edited
+@Client.on_message(GROUP_ONLY & filters.text)
 async def search_handler(client, message: Message):
     query = message.text
+    print(f"Received query: {query}")  # Log the incoming message
 
     results = await find_files(query)
     if not results:
+        print("No results found.")
         return
+
+    print(f"Found results: {results}")  # Log the results
 
     buttons = []
     for file in results:
         filters_detected = extract_filters(file["file_name"])
         file_id = file["file_id"]
 
-        # Create /start payload
         start_payload = f"files_{file_id}"
-
-        # Create telegram.dog link
         telegram_link = f"https://telegram.dog/{client.me.username}?start={start_payload}"
-
-        # Safelink using your function
         safe_link = await get_shortlink(telegram_link)
 
-        # Main Button
-        btn_text = file["file_name"][:50]  # Shortened text
+        btn_text = file["file_name"][:50]
         buttons.append([InlineKeyboardButton(text=btn_text, url=safe_link)])
 
-    # Add "How to Download" button at top
     buttons.insert(0, [InlineKeyboardButton("How to Download?", url="https://t.me/your_download_tutorial_link")])
 
-    # Pagination if results > 10
     if len(buttons) > 10:
-        buttons = buttons[:10]  # For now limit to 10 (you can improve it later)
+        buttons = buttons[:10]
 
-    # Send message
     reply_markup = InlineKeyboardMarkup(buttons)
     sent = await message.reply(
         "**Here are your search results!**",
@@ -83,7 +78,6 @@ async def search_handler(client, message: Message):
         quote=True
     )
 
-    # Delete search result after 5 minutes
     await asyncio.sleep(300)
     try:
         await sent.edit(
@@ -94,6 +88,8 @@ async def search_handler(client, message: Message):
         )
     except Exception as e:
         print(e)
+
+
 
 # Handle start command from link
 @Client.on_message(filters.private & filters.command("start"))
