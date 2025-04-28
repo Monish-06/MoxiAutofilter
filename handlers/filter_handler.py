@@ -7,6 +7,7 @@ from helpers.shortlink import get_shortlink  # Your safelink function
 import asyncio
 import re
 
+load_dotenv()
 GROUP = os.getenv('GROUP')
 CHANNEL = os.getenv('CHANNEL')
 
